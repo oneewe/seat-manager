@@ -21,6 +21,7 @@
   --pink-soft: #fff1f5;
   --blue-soft: #eef6ff;
   --danger: #d94a4a;
+  --orange: #d97706;
 }
 
 body {
@@ -71,18 +72,23 @@ body {
 }
 
 .hero::after {
-  content: "✦  book  ✦  class  ✦  English  ✦";
+  content: "✦ book ✦ class ✦ English ✦";
   position: absolute;
   right: 26px;
   bottom: 10px;
   font-size: 13px;
   letter-spacing: 2px;
   opacity: 0.18;
+  pointer-events: none;
+}
+
+.hero-left,
+.print-btn {
+  position: relative;
+  z-index: 2;
 }
 
 .hero-left {
-  position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -229,6 +235,8 @@ select:focus {
 }
 
 button {
+  position: relative;
+  z-index: 3;
   border: none;
   border-radius: 14px;
   padding: 12px 14px;
@@ -242,6 +250,10 @@ button {
 button:hover {
   transform: translateY(-1px);
   filter: brightness(0.98);
+}
+
+button:active {
+  transform: translateY(1px);
 }
 
 .main-btn {
@@ -263,8 +275,6 @@ button:hover {
 }
 
 .print-btn {
-  position: relative;
-  z-index: 1;
   background: var(--chalk);
   color: var(--chalkboard-dark);
   border: 1px solid rgba(255,255,255,0.45);
@@ -327,13 +337,20 @@ button:hover {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 #dateInfo {
   margin: 0;
   color: var(--muted);
   font-size: 14px;
+}
+
+.view-info {
+  margin: 6px 0 0;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .count-badge {
@@ -345,6 +362,34 @@ button:hover {
   color: var(--chalkboard-dark);
   border: 1px solid #c5d6c8;
   font-weight: 900;
+}
+
+.view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(232, 240, 233, 0.7);
+  border: 1px solid #c5d6c8;
+}
+
+.view-btn {
+  background: #fffefa;
+  color: var(--chalkboard-dark);
+  border: 1px solid #d6c8af;
+  padding: 10px 12px;
+}
+
+.view-btn.active {
+  background: var(--chalkboard-dark);
+  color: var(--chalk);
+}
+
+.print-view-btn {
+  background: var(--yellow-soft);
+  color: #6f4e24;
 }
 
 .front-board {
@@ -375,7 +420,7 @@ button:hover {
 
 .seat {
   width: 110px;
-  min-height: 78px;
+  min-height: 86px;
   border: 2px solid #dfcfb5;
   border-radius: 18px;
   background: #fffefa;
@@ -407,6 +452,40 @@ button:hover {
   color: #756c61;
 }
 
+.seat-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.seat-badge {
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+
+.badge-fixed {
+  background: #fff6d7;
+  color: #7a4b00;
+  border-color: #ecd89a;
+}
+
+.badge-pair {
+  background: #e8f0e9;
+  color: #244738;
+  border-color: #c5d6c8;
+}
+
+.badge-distance {
+  background: #fff0f0;
+  color: #b42318;
+  border-color: #f3c6c6;
+}
+
 .gender-male {
   border-color: #9fc6df;
   background: var(--blue-soft);
@@ -420,6 +499,25 @@ button:hover {
 .gender-unknown {
   border-color: #d6c8af;
   background: #fffdf5;
+}
+
+body[data-view="student"] .teacher-only-in-seat {
+  display: none;
+}
+
+body[data-view="student"] .seat-meta {
+  display: none;
+}
+
+body[data-view="student"] .gender-male,
+body[data-view="student"] .gender-female,
+body[data-view="student"] .gender-unknown {
+  border-color: #dfcfb5;
+  background: #fffefa;
+}
+
+body[data-view="student"] .seat {
+  min-height: 78px;
 }
 
 .warning-box {
@@ -453,7 +551,7 @@ button:hover {
 
   .seat {
     width: 95px;
-    min-height: 70px;
+    min-height: 76px;
   }
 
   .seat-map {
@@ -472,7 +570,6 @@ button:hover {
   }
 
   .no-print,
-  .hero button,
   .warning-box {
     display: none !important;
   }
@@ -495,6 +592,7 @@ button:hover {
   .hero h1 {
     color: black;
     text-shadow: none;
+    font-size: 24px;
   }
 
   .layout {
@@ -516,6 +614,22 @@ button:hover {
   .seat {
     box-shadow: none;
     break-inside: avoid;
+  }
+
+  body[data-print-mode="student"] .teacher-only-in-seat,
+  body[data-print-mode="student"] .seat-meta {
+    display: none !important;
+  }
+
+  body[data-print-mode="student"] .gender-male,
+  body[data-print-mode="student"] .gender-female,
+  body[data-print-mode="student"] .gender-unknown {
+    border-color: #999;
+    background: white;
+  }
+
+  body[data-print-mode="teacher"] .teacher-only-in-seat {
+    display: flex;
   }
 }
 ```
