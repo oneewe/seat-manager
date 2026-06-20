@@ -1,95 +1,144 @@
 ```javascript
 // script.js
-const classTitleInput = document.getElementById("classTitle");
-const rowCountInput = document.getElementById("rowCount");
-const colCountInput = document.getElementById("colCount");
-const studentInput = document.getElementById("studentInput");
-const genderPairModeInput = document.getElementById("genderPairMode");
+document.addEventListener("DOMContentLoaded", function () {
+  const classTitleInput = document.getElementById("classTitle");
+  const rowCountInput = document.getElementById("rowCount");
+  const colCountInput = document.getElementById("colCount");
+  const studentInput = document.getElementById("studentInput");
+  const genderPairModeInput = document.getElementById("genderPairMode");
 
-const generateBtn = document.getElementById("generateBtn");
-const saveBtn = document.getElementById("saveBtn");
-const sampleBtn = document.getElementById("sampleBtn");
-const clearBtn = document.getElementById("clearBtn");
-const printBtn = document.getElementById("printBtn");
+  const generateBtn = document.getElementById("generateBtn");
+  const saveBtn = document.getElementById("saveBtn");
+  const sampleBtn = document.getElementById("sampleBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const printBtn = document.getElementById("printBtn");
 
-const toggleSecretBtn = document.getElementById("toggleSecretBtn");
-const secretPanel = document.getElementById("secretPanel");
+  const toggleSecretBtn = document.getElementById("toggleSecretBtn");
+  const secretPanel = document.getElementById("secretPanel");
 
-const fixedStudentSelect = document.getElementById("fixedStudentSelect");
-const fixedRowInput = document.getElementById("fixedRow");
-const fixedColInput = document.getElementById("fixedCol");
-const addFixedSeatBtn = document.getElementById("addFixedSeatBtn");
-const fixedSeatList = document.getElementById("fixedSeatList");
-const fixedPairInput = document.getElementById("fixedPairInput");
+  const fixedStudentSelect = document.getElementById("fixedStudentSelect");
+  const fixedRowInput = document.getElementById("fixedRow");
+  const fixedColInput = document.getElementById("fixedCol");
+  const addFixedSeatBtn = document.getElementById("addFixedSeatBtn");
+  const fixedSeatList = document.getElementById("fixedSeatList");
+  const fixedPairInput = document.getElementById("fixedPairInput");
+  const distancePairInput = document.getElementById("distancePairInput");
 
-const seatMap = document.getElementById("seatMap");
-const resultTitle = document.getElementById("resultTitle");
-const dateInfo = document.getElementById("dateInfo");
-const studentCountInfo = document.getElementById("studentCountInfo");
-const warningBox = document.getElementById("warningBox");
+  const seatMap = document.getElementById("seatMap");
+  const resultTitle = document.getElementById("resultTitle");
+  const dateInfo = document.getElementById("dateInfo");
+  const viewInfo = document.getElementById("viewInfo");
+  const studentCountInfo = document.getElementById("studentCountInfo");
+  const warningBox = document.getElementById("warningBox");
 
-let fixedSeats = [];
+  const viewTeacherBtn = document.getElementById("viewTeacherBtn");
+  const viewStudentBtn = document.getElementById("viewStudentBtn");
+  const printTeacherBtn = document.getElementById("printTeacherBtn");
+  const printStudentBtn = document.getElementById("printStudentBtn");
 
-const STORAGE_KEY = "randomSeatManagerData";
+  const STORAGE_KEY = "randomSeatManagerData";
+  let fixedSeats = [];
+  let currentViewMode = "teacher";
+  let latestSeats = [];
+  let latestRowCount = 0;
+  let latestColCount = 0;
+  let latestDistanceNames = new Set();
 
-document.addEventListener("DOMContentLoaded", () => {
   loadSavedData();
+  setViewMode(currentViewMode);
   updateFixedStudentSelect();
   renderFixedSeatList();
-});
 
-studentInput.addEventListener("input", updateFixedStudentSelect);
+  studentInput.addEventListener("input", function () {
+    updateFixedStudentSelect();
+    saveData();
+  });
 
-toggleSecretBtn.addEventListener("click", () => {
-  secretPanel.classList.toggle("hidden");
+  rowCountInput.addEventListener("input", saveData);
+  colCountInput.addEventListener("input", saveData);
+  classTitleInput.addEventListener("input", saveData);
+  genderPairModeInput.addEventListener("change", saveData);
+  fixedPairInput.addEventListener("input", saveData);
+  distancePairInput.addEventListener("input", saveData);
 
-  if (secretPanel.classList.contains("hidden")) {
-    toggleSecretBtn.textContent = "교사용 고급 설정 열기";
-  } else {
-    toggleSecretBtn.textContent = "교사용 고급 설정 닫기";
-  }
-});
+  toggleSecretBtn.addEventListener("click", function () {
+    secretPanel.classList.toggle("hidden");
 
-addFixedSeatBtn.addEventListener("click", () => {
-  const studentName = fixedStudentSelect.value;
-  const row = Number(fixedRowInput.value);
-  const col = Number(fixedColInput.value);
+    if (secretPanel.classList.contains("hidden")) {
+      toggleSecretBtn.textContent = "교사용 고급 설정 열기";
+    } else {
+      toggleSecretBtn.textContent = "교사용 고급 설정 닫기";
+    }
+  });
 
-  if (!studentName) {
-    alert("고정할 학생을 선택해 주세요.");
-    return;
-  }
+  viewTeacherBtn.addEventListener("click", function () {
+    setViewMode("teacher");
+  });
 
-  if (row < 1 || col < 1) {
-    alert("줄과 칸은 1 이상이어야 합니다.");
-    return;
-  }
+  viewStudentBtn.addEventListener("click", function () {
+    setViewMode("student");
+  });
 
-  const maxRows = Number(rowCountInput.value);
-  const maxCols = Number(colCountInput.value);
+  printTeacherBtn.addEventListener("click", function () {
+    printForMode("teacher");
+  });
 
-  if (row > maxRows || col > maxCols) {
-    alert(`현재 설정은 ${maxRows}줄 ${maxCols}칸입니다. 범위 안에서 입력해 주세요.`);
-    return;
-  }
+  printStudentBtn.addEventListener("click", function () {
+    printForMode("student");
+  });
 
-  fixedSeats = fixedSeats.filter(item => item.studentName !== studentName);
-  fixedSeats = fixedSeats.filter(item => !(item.row === row && item.col === col));
+  printBtn.addEventListener("click", function () {
+    printForMode(currentViewMode);
+  });
 
-  fixedSeats.push({ studentName, row, col });
-  renderFixedSeatList();
-  saveData();
-});
+  addFixedSeatBtn.addEventListener("click", function () {
+    const studentName = fixedStudentSelect.value;
+    const row = Number(fixedRowInput.value);
+    const col = Number(fixedColInput.value);
 
-generateBtn.addEventListener("click", generateSeats);
+    if (!studentName) {
+      alert("고정할 학생을 선택해 주세요.");
+      return;
+    }
 
-saveBtn.addEventListener("click", () => {
-  saveData();
-  alert("현재 설정이 이 브라우저에 저장되었습니다.");
-});
+    if (row < 1 || col < 1) {
+      alert("줄과 칸은 1 이상이어야 합니다.");
+      return;
+    }
 
-sampleBtn.addEventListener("click", () => {
-  studentInput.value =
+    const maxRows = Number(rowCountInput.value);
+    const maxCols = Number(colCountInput.value);
+
+    if (row > maxRows || col > maxCols) {
+      alert(`현재 설정은 ${maxRows}줄 ${maxCols}칸입니다. 범위 안에서 입력해 주세요.`);
+      return;
+    }
+
+    fixedSeats = fixedSeats.filter(function (item) {
+      return item.studentName !== studentName;
+    });
+
+    fixedSeats = fixedSeats.filter(function (item) {
+      return !(item.row === row && item.col === col);
+    });
+
+    fixedSeats.push({ studentName: studentName, row: row, col: col });
+
+    renderFixedSeatList();
+    saveData();
+  });
+
+  generateBtn.addEventListener("click", function () {
+    generateSeats();
+  });
+
+  saveBtn.addEventListener("click", function () {
+    saveData();
+    alert("현재 설정이 이 브라우저에 저장되었습니다.");
+  });
+
+  sampleBtn.addEventListener("click", function () {
+    studentInput.value =
 `김하늘,여
 박도윤,남
 이서연,여
@@ -121,580 +170,811 @@ sampleBtn.addEventListener("click", () => {
 최서아,여
 이현준,남`;
 
-  updateFixedStudentSelect();
-  saveData();
-});
+    fixedPairInput.value = "김하늘, 박도윤";
+    distancePairInput.value = "정다은, 오지호\n한유진, 문시우";
 
-clearBtn.addEventListener("click", () => {
-  const ok = confirm("저장된 명단과 고정 설정을 모두 삭제할까요?");
-  if (!ok) return;
+    updateFixedStudentSelect();
+    saveData();
+  });
 
-  localStorage.removeItem(STORAGE_KEY);
+  clearBtn.addEventListener("click", function () {
+    const ok = confirm("저장된 명단과 고정 설정을 모두 삭제할까요?");
+    if (!ok) return;
 
-  classTitleInput.value = "";
-  rowCountInput.value = 6;
-  colCountInput.value = 6;
-  studentInput.value = "";
-  fixedPairInput.value = "";
-  genderPairModeInput.checked = true;
-  fixedSeats = [];
+    localStorage.removeItem(STORAGE_KEY);
 
-  seatMap.innerHTML = "";
-  resultTitle.textContent = "자리 배치 결과";
-  dateInfo.textContent = "자리표를 생성하면 날짜가 표시됩니다.";
-  studentCountInfo.textContent = "0명";
-  warningBox.classList.add("hidden");
-  warningBox.innerHTML = "";
+    classTitleInput.value = "";
+    rowCountInput.value = 6;
+    colCountInput.value = 6;
+    studentInput.value = "";
+    fixedPairInput.value = "";
+    distancePairInput.value = "";
+    genderPairModeInput.checked = true;
+    fixedSeats = [];
+    latestSeats = [];
+    latestDistanceNames = new Set();
 
-  updateFixedStudentSelect();
-  renderFixedSeatList();
-});
+    seatMap.innerHTML = "";
+    resultTitle.textContent = "자리 배치 결과";
+    dateInfo.textContent = "자리표를 생성하면 날짜가 표시됩니다.";
+    studentCountInfo.textContent = "0명";
+    warningBox.classList.add("hidden");
+    warningBox.innerHTML = "";
 
-printBtn.addEventListener("click", () => {
-  window.print();
-});
+    setViewMode("teacher");
+    updateFixedStudentSelect();
+    renderFixedSeatList();
+  });
 
-function normalizeGender(rawGender) {
-  const text = String(rawGender || "").trim().toLowerCase();
+  function setViewMode(mode) {
+    currentViewMode = mode;
+    document.body.dataset.view = mode;
 
-  if (["남", "남자", "m", "male", "boy", "남학생"].includes(text)) {
-    return "남";
-  }
-
-  if (["여", "여자", "f", "female", "girl", "여학생"].includes(text)) {
-    return "여";
-  }
-
-  return "";
-}
-
-function parseStudents() {
-  const lines = studentInput.value
-    .split("\n")
-    .map(line => line.trim())
-    .filter(Boolean);
-
-  const students = [];
-  const usedNames = new Set();
-
-  for (const line of lines) {
-    let name = "";
-    let gender = "";
-
-    if (line.includes(",")) {
-      const parts = line.split(",").map(part => part.trim());
-      name = parts[0];
-      gender = normalizeGender(parts[1]);
-    } else if (line.includes("\t")) {
-      const parts = line.split("\t").map(part => part.trim());
-      name = parts[0];
-      gender = normalizeGender(parts[1]);
+    if (mode === "teacher") {
+      viewTeacherBtn.classList.add("active");
+      viewStudentBtn.classList.remove("active");
+      viewInfo.textContent = "현재: 교사 시점";
     } else {
-      const parts = line.split(/\s+/);
-      name = parts[0];
-      gender = normalizeGender(parts[1]);
+      viewStudentBtn.classList.add("active");
+      viewTeacherBtn.classList.remove("active");
+      viewInfo.textContent = "현재: 학생 시점";
     }
 
-    if (!name || usedNames.has(name)) continue;
-
-    usedNames.add(name);
-    students.push({ name, gender });
+    saveData();
   }
 
-  return students;
-}
+  function printForMode(mode) {
+    const originalView = currentViewMode;
 
-function updateFixedStudentSelect() {
-  const students = parseStudents();
+    setViewMode(mode);
+    document.body.dataset.printMode = mode;
 
-  fixedStudentSelect.innerHTML = "";
+    setTimeout(function () {
+      window.print();
 
-  const defaultOption = document.createElement("option");
-  defaultOption.value = "";
-  defaultOption.textContent = "학생 선택";
-  fixedStudentSelect.appendChild(defaultOption);
-
-  students.forEach(student => {
-    const option = document.createElement("option");
-    option.value = student.name;
-    option.textContent = `${student.name}${student.gender ? ` (${student.gender})` : ""}`;
-    fixedStudentSelect.appendChild(option);
-  });
-}
-
-function renderFixedSeatList() {
-  fixedSeatList.innerHTML = "";
-
-  if (fixedSeats.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "hint";
-    empty.textContent = "아직 고정된 자리가 없습니다.";
-    fixedSeatList.appendChild(empty);
-    return;
+      setTimeout(function () {
+        document.body.dataset.printMode = "";
+        setViewMode(originalView);
+      }, 300);
+    }, 100);
   }
 
-  fixedSeats.forEach((item, index) => {
-    const tag = document.createElement("span");
-    tag.className = "tag";
-    tag.innerHTML = `
-      ${escapeHTML(item.studentName)} → ${item.row}줄 ${item.col}칸
-      <button type="button" aria-label="삭제">×</button>
-    `;
+  function normalizeGender(rawGender) {
+    const text = String(rawGender || "").trim().toLowerCase();
 
-    tag.querySelector("button").addEventListener("click", () => {
-      fixedSeats.splice(index, 1);
-      renderFixedSeatList();
-      saveData();
+    if (["남", "남자", "m", "male", "boy", "남학생"].includes(text)) {
+      return "남";
+    }
+
+    if (["여", "여자", "f", "female", "girl", "여학생"].includes(text)) {
+      return "여";
+    }
+
+    return "";
+  }
+
+  function parseStudents() {
+    const lines = studentInput.value
+      .split("\n")
+      .map(function (line) {
+        return line.trim();
+      })
+      .filter(Boolean);
+
+    const students = [];
+    const usedNames = new Set();
+
+    lines.forEach(function (line) {
+      let name = "";
+      let gender = "";
+
+      if (line.includes(",")) {
+        const parts = line.split(",").map(function (part) {
+          return part.trim();
+        });
+        name = parts[0];
+        gender = normalizeGender(parts[1]);
+      } else if (line.includes("\t")) {
+        const parts = line.split("\t").map(function (part) {
+          return part.trim();
+        });
+        name = parts[0];
+        gender = normalizeGender(parts[1]);
+      } else {
+        const parts = line.split(/\s+/);
+        name = parts[0];
+        gender = normalizeGender(parts[1]);
+      }
+
+      if (!name || usedNames.has(name)) return;
+
+      usedNames.add(name);
+      students.push({ name: name, gender: gender });
     });
 
-    fixedSeatList.appendChild(tag);
-  });
-}
+    return students;
+  }
 
-function parseFixedPairs() {
-  const lines = fixedPairInput.value
-    .split("\n")
-    .map(line => line.trim())
-    .filter(Boolean);
+  function updateFixedStudentSelect() {
+    const students = parseStudents();
 
-  const pairs = [];
+    fixedStudentSelect.innerHTML = "";
 
-  for (const line of lines) {
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "학생 선택";
+    fixedStudentSelect.appendChild(defaultOption);
+
+    students.forEach(function (student) {
+      const option = document.createElement("option");
+      option.value = student.name;
+      option.textContent = student.gender
+        ? `${student.name} (${student.gender})`
+        : student.name;
+
+      fixedStudentSelect.appendChild(option);
+    });
+  }
+
+  function renderFixedSeatList() {
+    fixedSeatList.innerHTML = "";
+
+    if (fixedSeats.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "hint";
+      empty.textContent = "아직 고정된 자리가 없습니다.";
+      fixedSeatList.appendChild(empty);
+      return;
+    }
+
+    fixedSeats.forEach(function (item, index) {
+      const tag = document.createElement("span");
+      tag.className = "tag";
+
+      const text = document.createElement("span");
+      text.textContent = `${item.studentName} → ${item.row}줄 ${item.col}칸`;
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.textContent = "×";
+
+      removeBtn.addEventListener("click", function () {
+        fixedSeats.splice(index, 1);
+        renderFixedSeatList();
+        saveData();
+      });
+
+      tag.appendChild(text);
+      tag.appendChild(removeBtn);
+      fixedSeatList.appendChild(tag);
+    });
+  }
+
+  function parseNameLine(line) {
     let parts = [];
 
     if (line.includes(",")) {
-      parts = line.split(",").map(part => part.trim());
+      parts = line.split(",");
     } else if (line.includes("-")) {
-      parts = line.split("-").map(part => part.trim());
+      parts = line.split("-");
     } else {
-      parts = line.split(/\s+/).map(part => part.trim());
+      parts = line.split(/\s+/);
     }
 
-    if (parts.length >= 2 && parts[0] && parts[1] && parts[0] !== parts[1]) {
-      pairs.push([parts[0], parts[1]]);
-    }
+    return parts
+      .map(function (part) {
+        return part.trim();
+      })
+      .filter(Boolean);
   }
 
-  return pairs;
-}
+  function parseFixedPairs() {
+    const lines = fixedPairInput.value
+      .split("\n")
+      .map(function (line) {
+        return line.trim();
+      })
+      .filter(Boolean);
 
-function generateSeats() {
-  const students = parseStudents();
-  const rowCount = Number(rowCountInput.value);
-  const colCount = Number(colCountInput.value);
-  const seatCount = rowCount * colCount;
+    const pairs = [];
 
-  const warnings = [];
+    lines.forEach(function (line) {
+      const parts = parseNameLine(line);
 
-  if (students.length === 0) {
-    alert("학생 명단을 입력해 주세요.");
-    return;
+      if (parts.length >= 2 && parts[0] !== parts[1]) {
+        pairs.push([parts[0], parts[1]]);
+      }
+    });
+
+    return pairs;
   }
 
-  if (students.length > seatCount) {
-    alert(`학생 수는 ${students.length}명인데 좌석은 ${seatCount}개입니다. 줄/칸 수를 늘려 주세요.`);
-    return;
+  function parseDistancePairs() {
+    const lines = distancePairInput.value
+      .split("\n")
+      .map(function (line) {
+        return line.trim();
+      })
+      .filter(Boolean);
+
+    const pairs = [];
+    const pairKeys = new Set();
+
+    lines.forEach(function (line) {
+      const names = parseNameLine(line);
+
+      for (let i = 0; i < names.length; i++) {
+        for (let j = i + 1; j < names.length; j++) {
+          if (names[i] === names[j]) continue;
+
+          const key = [names[i], names[j]].sort().join("||");
+
+          if (!pairKeys.has(key)) {
+            pairKeys.add(key);
+            pairs.push([names[i], names[j]]);
+          }
+        }
+      }
+    });
+
+    return pairs;
   }
 
-  const studentMap = new Map(students.map(student => [student.name, student]));
-  const seats = Array(seatCount).fill(null);
-  const assignedNames = new Set();
+  function generateSeats() {
+    const students = parseStudents();
+    const rowCount = Number(rowCountInput.value);
+    const colCount = Number(colCountInput.value);
+    const seatCount = rowCount * colCount;
 
-  const validFixedSeats = fixedSeats.filter(item => {
-    if (!studentMap.has(item.studentName)) {
-      warnings.push(`고정 자리 학생 "${item.studentName}"은 현재 명단에 없습니다.`);
-      return false;
+    if (students.length === 0) {
+      alert("학생 명단을 입력해 주세요.");
+      return;
     }
 
-    if (item.row < 1 || item.row > rowCount || item.col < 1 || item.col > colCount) {
-      warnings.push(`"${item.studentName}"의 고정 자리 위치가 현재 좌석 범위를 벗어났습니다.`);
-      return false;
+    if (students.length > seatCount) {
+      alert(`학생 수는 ${students.length}명인데 좌석은 ${seatCount}개입니다. 줄/칸 수를 늘려 주세요.`);
+      return;
     }
 
-    return true;
-  });
+    const distancePairs = parseDistancePairs();
+    const distanceNames = getDistanceNameSet(distancePairs);
 
-  for (const item of validFixedSeats) {
-    const index = getIndex(item.row - 1, item.col - 1, colCount);
+    let bestResult = null;
+    let bestViolationCount = Infinity;
 
-    if (seats[index]) {
-      warnings.push(`${item.row}줄 ${item.col}칸에 이미 다른 학생이 고정되어 있습니다.`);
-      continue;
+    for (let attempt = 0; attempt < 500; attempt++) {
+      const result = makeArrangement(students, rowCount, colCount);
+      const violations = getDistanceViolations(result.seats, distancePairs, colCount);
+
+      if (violations.length < bestViolationCount) {
+        bestResult = result;
+        bestViolationCount = violations.length;
+      }
+
+      if (violations.length === 0) {
+        break;
+      }
     }
 
-    if (assignedNames.has(item.studentName)) {
-      warnings.push(`"${item.studentName}"이 중복 고정되어 하나만 반영했습니다.`);
-      continue;
+    if (!bestResult) return;
+
+    const finalViolations = getDistanceViolations(bestResult.seats, distancePairs, colCount);
+    const allWarnings = bestResult.warnings.slice();
+
+    finalViolations.forEach(function (item) {
+      allWarnings.push(`거리두기 설정: "${item[0]}"와 "${item[1]}"이 가까운 자리에 배치되었습니다. 좌석 수나 고정 조건 때문에 완전히 분리하지 못했을 수 있습니다.`);
+    });
+
+    latestSeats = bestResult.seats;
+    latestRowCount = rowCount;
+    latestColCount = colCount;
+    latestDistanceNames = distanceNames;
+
+    renderSeats(bestResult.seats, rowCount, colCount, distanceNames);
+    renderResultInfo(students.length);
+    renderWarnings(allWarnings);
+    saveData();
+  }
+
+  function makeArrangement(students, rowCount, colCount) {
+    const seatCount = rowCount * colCount;
+    const studentMap = new Map();
+    const warnings = [];
+    const seats = Array(seatCount).fill(null);
+    const assignedNames = new Set();
+
+    students.forEach(function (student) {
+      studentMap.set(student.name, student);
+    });
+
+    fixedSeats.forEach(function (item) {
+      if (!studentMap.has(item.studentName)) {
+        warnings.push(`고정 자리 학생 "${item.studentName}"은 현재 명단에 없습니다.`);
+        return;
+      }
+
+      if (item.row < 1 || item.row > rowCount || item.col < 1 || item.col > colCount) {
+        warnings.push(`"${item.studentName}"의 고정 자리 위치가 현재 좌석 범위를 벗어났습니다.`);
+        return;
+      }
+
+      const index = getIndex(item.row - 1, item.col - 1, colCount);
+
+      if (seats[index]) {
+        warnings.push(`${item.row}줄 ${item.col}칸에 이미 다른 학생이 고정되어 있습니다.`);
+        return;
+      }
+
+      seats[index] = Object.assign({}, studentMap.get(item.studentName), {
+        fixed: true
+      });
+
+      assignedNames.add(item.studentName);
+    });
+
+    placeFixedPairs({
+      fixedPairs: parseFixedPairs(),
+      studentMap: studentMap,
+      seats: seats,
+      rowCount: rowCount,
+      colCount: colCount,
+      assignedNames: assignedNames,
+      warnings: warnings
+    });
+
+    const remainingStudents = students.filter(function (student) {
+      return !assignedNames.has(student.name);
+    });
+
+    shuffle(remainingStudents);
+
+    if (genderPairModeInput.checked) {
+      placeGenderPairs({
+        remainingStudents: remainingStudents,
+        seats: seats,
+        rowCount: rowCount,
+        colCount: colCount,
+        assignedNames: assignedNames
+      });
     }
 
-    seats[index] = {
-      ...studentMap.get(item.studentName),
-      fixed: true
+    fillRemainingSeats({
+      students: students,
+      seats: seats,
+      assignedNames: assignedNames
+    });
+
+    return {
+      seats: seats,
+      warnings: warnings
     };
-
-    assignedNames.add(item.studentName);
   }
 
-  const fixedPairs = parseFixedPairs();
+  function placeFixedPairs(data) {
+    const fixedPairs = data.fixedPairs;
+    const studentMap = data.studentMap;
+    const seats = data.seats;
+    const rowCount = data.rowCount;
+    const colCount = data.colCount;
+    const assignedNames = data.assignedNames;
+    const warnings = data.warnings;
+    const usedInPair = new Set();
 
-  placeFixedPairs({
-    fixedPairs,
-    studentMap,
-    seats,
-    rowCount,
-    colCount,
-    assignedNames,
-    warnings
-  });
+    fixedPairs.forEach(function (pairNames) {
+      const nameA = pairNames[0];
+      const nameB = pairNames[1];
 
-  const remainingStudents = students.filter(student => !assignedNames.has(student.name));
-  shuffle(remainingStudents);
+      if (!studentMap.has(nameA) || !studentMap.has(nameB)) {
+        warnings.push(`고정 짝꿍 "${nameA}, ${nameB}" 중 명단에 없는 학생이 있습니다.`);
+        return;
+      }
 
-  if (genderPairModeInput.checked) {
-    placeGenderPairs({
-      remainingStudents,
-      seats,
-      rowCount,
-      colCount,
-      assignedNames
+      if (usedInPair.has(nameA) || usedInPair.has(nameB)) {
+        warnings.push(`고정 짝꿍 설정에서 "${nameA}" 또는 "${nameB}"이 중복되어 일부만 반영했습니다.`);
+        return;
+      }
+
+      usedInPair.add(nameA);
+      usedInPair.add(nameB);
+
+      const indexA = findStudentSeatIndex(seats, nameA);
+      const indexB = findStudentSeatIndex(seats, nameB);
+
+      if (indexA !== -1 && indexB !== -1) {
+        if (!areSideBySide(indexA, indexB, colCount)) {
+          warnings.push(`"${nameA}"와 "${nameB}"은 각각 고정석이 있어 짝꿍으로 붙여 앉히지 못했습니다.`);
+        }
+
+        assignedNames.add(nameA);
+        assignedNames.add(nameB);
+        return;
+      }
+
+      if (indexA !== -1 && indexB === -1) {
+        const nearSeat = findEmptySideSeat(indexA, seats, rowCount, colCount);
+
+        if (nearSeat === -1) {
+          warnings.push(`"${nameA}" 주변에 빈자리가 없어 "${nameB}"을 짝꿍으로 고정하지 못했습니다.`);
+          return;
+        }
+
+        seats[nearSeat] = Object.assign({}, studentMap.get(nameB), {
+          fixedPair: true
+        });
+
+        assignedNames.add(nameA);
+        assignedNames.add(nameB);
+        return;
+      }
+
+      if (indexA === -1 && indexB !== -1) {
+        const nearSeat = findEmptySideSeat(indexB, seats, rowCount, colCount);
+
+        if (nearSeat === -1) {
+          warnings.push(`"${nameB}" 주변에 빈자리가 없어 "${nameA}"을 짝꿍으로 고정하지 못했습니다.`);
+          return;
+        }
+
+        seats[nearSeat] = Object.assign({}, studentMap.get(nameA), {
+          fixedPair: true
+        });
+
+        assignedNames.add(nameA);
+        assignedNames.add(nameB);
+        return;
+      }
+
+      const pairSlot = getRandomEmptyPairSlot(seats, rowCount, colCount);
+
+      if (!pairSlot) {
+        warnings.push(`빈 2인 좌석이 없어 "${nameA}, ${nameB}" 짝꿍 고정을 반영하지 못했습니다.`);
+        return;
+      }
+
+      const pairStudents = shuffle([
+        Object.assign({}, studentMap.get(nameA), { fixedPair: true }),
+        Object.assign({}, studentMap.get(nameB), { fixedPair: true })
+      ]);
+
+      seats[pairSlot[0]] = pairStudents[0];
+      seats[pairSlot[1]] = pairStudents[1];
+
+      assignedNames.add(nameA);
+      assignedNames.add(nameB);
     });
   }
 
-  fillRemainingSeats({
-    students,
-    seats,
-    assignedNames
-  });
+  function placeGenderPairs(data) {
+    const remainingStudents = data.remainingStudents;
+    const seats = data.seats;
+    const rowCount = data.rowCount;
+    const colCount = data.colCount;
+    const assignedNames = data.assignedNames;
 
-  renderSeats(seats, rowCount, colCount);
-  renderResultInfo(students.length);
-  renderWarnings(warnings);
-  saveData();
-}
+    const boys = remainingStudents.filter(function (student) {
+      return student.gender === "남";
+    });
 
-function placeFixedPairs({
-  fixedPairs,
-  studentMap,
-  seats,
-  rowCount,
-  colCount,
-  assignedNames,
-  warnings
-}) {
-  const usedInPair = new Set();
+    const girls = remainingStudents.filter(function (student) {
+      return student.gender === "여";
+    });
 
-  for (const [nameA, nameB] of fixedPairs) {
-    if (!studentMap.has(nameA) || !studentMap.has(nameB)) {
-      warnings.push(`고정 짝꿍 "${nameA}, ${nameB}" 중 명단에 없는 학생이 있습니다.`);
-      continue;
-    }
+    shuffle(boys);
+    shuffle(girls);
 
-    if (usedInPair.has(nameA) || usedInPair.has(nameB)) {
-      warnings.push(`고정 짝꿍 설정에서 "${nameA}" 또는 "${nameB}"이 중복되어 일부만 반영했습니다.`);
-      continue;
-    }
+    const pairSlots = getEmptyPairSlots(seats, rowCount, colCount);
+    shuffle(pairSlots);
 
-    usedInPair.add(nameA);
-    usedInPair.add(nameB);
+    while (boys.length > 0 && girls.length > 0 && pairSlots.length > 0) {
+      const slot = pairSlots.pop();
+      const pair = shuffle([boys.pop(), girls.pop()]);
 
-    const indexA = findStudentSeatIndex(seats, nameA);
-    const indexB = findStudentSeatIndex(seats, nameB);
+      seats[slot[0]] = pair[0];
+      seats[slot[1]] = pair[1];
 
-    if (indexA !== -1 && indexB !== -1) {
-      if (!areAdjacent(indexA, indexB, colCount)) {
-        warnings.push(`"${nameA}"와 "${nameB}"은 각각 고정석이 있어 짝꿍으로 붙여 앉히지 못했습니다.`);
-      }
-      assignedNames.add(nameA);
-      assignedNames.add(nameB);
-      continue;
-    }
-
-    if (indexA !== -1 && indexB === -1) {
-      const nearSeat = findEmptyAdjacentSeat(indexA, seats, rowCount, colCount);
-
-      if (nearSeat === -1) {
-        warnings.push(`"${nameA}" 주변에 빈자리가 없어 "${nameB}"을 짝꿍으로 고정하지 못했습니다.`);
-        continue;
-      }
-
-      seats[nearSeat] = {
-        ...studentMap.get(nameB),
-        fixedPair: true
-      };
-
-      assignedNames.add(nameA);
-      assignedNames.add(nameB);
-      continue;
-    }
-
-    if (indexA === -1 && indexB !== -1) {
-      const nearSeat = findEmptyAdjacentSeat(indexB, seats, rowCount, colCount);
-
-      if (nearSeat === -1) {
-        warnings.push(`"${nameB}" 주변에 빈자리가 없어 "${nameA}"을 짝꿍으로 고정하지 못했습니다.`);
-        continue;
-      }
-
-      seats[nearSeat] = {
-        ...studentMap.get(nameA),
-        fixedPair: true
-      };
-
-      assignedNames.add(nameA);
-      assignedNames.add(nameB);
-      continue;
-    }
-
-    const pairSlot = getRandomEmptyPairSlot(seats, rowCount, colCount);
-
-    if (!pairSlot) {
-      warnings.push(`빈 2인 좌석이 없어 "${nameA}, ${nameB}" 짝꿍 고정을 반영하지 못했습니다.`);
-      continue;
-    }
-
-    const pair = shuffle([
-      { ...studentMap.get(nameA), fixedPair: true },
-      { ...studentMap.get(nameB), fixedPair: true }
-    ]);
-
-    seats[pairSlot[0]] = pair[0];
-    seats[pairSlot[1]] = pair[1];
-
-    assignedNames.add(nameA);
-    assignedNames.add(nameB);
-  }
-}
-
-function placeGenderPairs({
-  remainingStudents,
-  seats,
-  rowCount,
-  colCount,
-  assignedNames
-}) {
-  const boys = remainingStudents.filter(student => student.gender === "남");
-  const girls = remainingStudents.filter(student => student.gender === "여");
-
-  shuffle(boys);
-  shuffle(girls);
-
-  let pairSlots = getEmptyPairSlots(seats, rowCount, colCount);
-  shuffle(pairSlots);
-
-  while (boys.length > 0 && girls.length > 0 && pairSlots.length > 0) {
-    const slot = pairSlots.pop();
-    const pair = shuffle([boys.pop(), girls.pop()]);
-
-    seats[slot[0]] = pair[0];
-    seats[slot[1]] = pair[1];
-
-    assignedNames.add(pair[0].name);
-    assignedNames.add(pair[1].name);
-  }
-}
-
-function fillRemainingSeats({ students, seats, assignedNames }) {
-  const remaining = students.filter(student => !assignedNames.has(student.name));
-  shuffle(remaining);
-
-  for (let i = 0; i < seats.length; i++) {
-    if (!seats[i] && remaining.length > 0) {
-      const student = remaining.pop();
-      seats[i] = student;
-      assignedNames.add(student.name);
+      assignedNames.add(pair[0].name);
+      assignedNames.add(pair[1].name);
     }
   }
-}
 
-function getEmptyPairSlots(seats, rowCount, colCount) {
-  const slots = [];
+  function fillRemainingSeats(data) {
+    const students = data.students;
+    const seats = data.seats;
+    const assignedNames = data.assignedNames;
 
-  for (let r = 0; r < rowCount; r++) {
-    for (let c = 0; c < colCount - 1; c += 2) {
-      const left = getIndex(r, c, colCount);
-      const right = getIndex(r, c + 1, colCount);
+    const remaining = students.filter(function (student) {
+      return !assignedNames.has(student.name);
+    });
 
-      if (!seats[left] && !seats[right]) {
-        slots.push([left, right]);
+    shuffle(remaining);
+
+    for (let i = 0; i < seats.length; i++) {
+      if (!seats[i] && remaining.length > 0) {
+        const student = remaining.pop();
+        seats[i] = student;
+        assignedNames.add(student.name);
       }
     }
   }
 
-  return slots;
-}
+  function getEmptyPairSlots(seats, rowCount, colCount) {
+    const slots = [];
 
-function getRandomEmptyPairSlot(seats, rowCount, colCount) {
-  const slots = getEmptyPairSlots(seats, rowCount, colCount);
-  if (slots.length === 0) return null;
+    for (let r = 0; r < rowCount; r++) {
+      for (let c = 0; c < colCount - 1; c += 2) {
+        const left = getIndex(r, c, colCount);
+        const right = getIndex(r, c + 1, colCount);
 
-  shuffle(slots);
-  return slots[0];
-}
+        if (!seats[left] && !seats[right]) {
+          slots.push([left, right]);
+        }
+      }
+    }
 
-function findEmptyAdjacentSeat(index, seats, rowCount, colCount) {
-  const row = Math.floor(index / colCount);
-  const col = index % colCount;
+    return slots;
+  }
 
-  const candidates = [
-    [row, col - 1],
-    [row, col + 1],
-    [row - 1, col],
-    [row + 1, col]
-  ];
+  function getRandomEmptyPairSlot(seats, rowCount, colCount) {
+    const slots = getEmptyPairSlots(seats, rowCount, colCount);
 
-  const validIndexes = candidates
-    .filter(([r, c]) => r >= 0 && r < rowCount && c >= 0 && c < colCount)
-    .map(([r, c]) => getIndex(r, c, colCount))
-    .filter(candidateIndex => !seats[candidateIndex]);
+    if (slots.length === 0) return null;
 
-  if (validIndexes.length === 0) return -1;
+    shuffle(slots);
+    return slots[0];
+  }
 
-  shuffle(validIndexes);
-  return validIndexes[0];
-}
+  function findEmptySideSeat(index, seats, rowCount, colCount) {
+    const row = Math.floor(index / colCount);
+    const col = index % colCount;
 
-function findStudentSeatIndex(seats, studentName) {
-  return seats.findIndex(seat => seat && seat.name === studentName);
-}
+    const candidates = [
+      [row, col - 1],
+      [row, col + 1]
+    ];
 
-function areAdjacent(indexA, indexB, colCount) {
-  const rowA = Math.floor(indexA / colCount);
-  const colA = indexA % colCount;
-  const rowB = Math.floor(indexB / colCount);
-  const colB = indexB % colCount;
+    const validIndexes = candidates
+      .filter(function (position) {
+        const r = position[0];
+        const c = position[1];
+        return r >= 0 && r < rowCount && c >= 0 && c < colCount;
+      })
+      .map(function (position) {
+        return getIndex(position[0], position[1], colCount);
+      })
+      .filter(function (candidateIndex) {
+        return !seats[candidateIndex];
+      });
 
-  const rowDiff = Math.abs(rowA - rowB);
-  const colDiff = Math.abs(colA - colB);
+    if (validIndexes.length === 0) return -1;
 
-  return rowDiff + colDiff === 1;
-}
+    shuffle(validIndexes);
+    return validIndexes[0];
+  }
 
-function getIndex(row, col, colCount) {
-  return row * colCount + col;
-}
+  function findStudentSeatIndex(seats, studentName) {
+    return seats.findIndex(function (seat) {
+      return seat && seat.name === studentName;
+    });
+  }
 
-function renderSeats(seats, rowCount, colCount) {
-  seatMap.innerHTML = "";
-  seatMap.style.gridTemplateColumns = `repeat(${colCount}, 110px)`;
+  function areSideBySide(indexA, indexB, colCount) {
+    const rowA = Math.floor(indexA / colCount);
+    const colA = indexA % colCount;
+    const rowB = Math.floor(indexB / colCount);
+    const colB = indexB % colCount;
 
-  seats.forEach((student, index) => {
-    const row = Math.floor(index / colCount) + 1;
-    const col = (index % colCount) + 1;
+    return rowA === rowB && Math.abs(colA - colB) === 1;
+  }
 
-    const seat = document.createElement("div");
-    seat.className = "seat";
+  function areTooClose(indexA, indexB, colCount) {
+    const rowA = Math.floor(indexA / colCount);
+    const colA = indexA % colCount;
+    const rowB = Math.floor(indexB / colCount);
+    const colB = indexB % colCount;
 
-    if (!student) {
-      seat.classList.add("empty");
-      seat.innerHTML = `
-        <div class="seat-name">빈자리</div>
-        <div class="seat-meta">${row}줄 ${col}칸</div>
-      `;
-    } else {
-      if (student.gender === "남") {
-        seat.classList.add("gender-male");
-      } else if (student.gender === "여") {
-        seat.classList.add("gender-female");
+    const rowDiff = Math.abs(rowA - rowB);
+    const colDiff = Math.abs(colA - colB);
+
+    return rowDiff <= 1 && colDiff <= 1;
+  }
+
+  function getDistanceViolations(seats, distancePairs, colCount) {
+    const violations = [];
+
+    distancePairs.forEach(function (pair) {
+      const nameA = pair[0];
+      const nameB = pair[1];
+
+      const indexA = findStudentSeatIndex(seats, nameA);
+      const indexB = findStudentSeatIndex(seats, nameB);
+
+      if (indexA === -1 || indexB === -1) return;
+
+      if (areTooClose(indexA, indexB, colCount)) {
+        violations.push([nameA, nameB]);
+      }
+    });
+
+    return violations;
+  }
+
+  function getDistanceNameSet(distancePairs) {
+    const set = new Set();
+
+    distancePairs.forEach(function (pair) {
+      set.add(pair[0]);
+      set.add(pair[1]);
+    });
+
+    return set;
+  }
+
+  function getIndex(row, col, colCount) {
+    return row * colCount + col;
+  }
+
+  function renderSeats(seats, rowCount, colCount, distanceNames) {
+    seatMap.innerHTML = "";
+    seatMap.style.gridTemplateColumns = `repeat(${colCount}, 110px)`;
+
+    seats.forEach(function (student, index) {
+      const row = Math.floor(index / colCount) + 1;
+      const col = (index % colCount) + 1;
+
+      const seat = document.createElement("div");
+      seat.className = "seat";
+
+      const nameDiv = document.createElement("div");
+      nameDiv.className = "seat-name";
+
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "seat-meta teacher-only-in-seat";
+
+      const badgeDiv = document.createElement("div");
+      badgeDiv.className = "seat-badges teacher-only-in-seat";
+
+      if (!student) {
+        seat.classList.add("empty");
+        nameDiv.textContent = "빈자리";
+        metaDiv.textContent = `${row}줄 ${col}칸`;
       } else {
-        seat.classList.add("gender-unknown");
+        if (student.gender === "남") {
+          seat.classList.add("gender-male");
+        } else if (student.gender === "여") {
+          seat.classList.add("gender-female");
+        } else {
+          seat.classList.add("gender-unknown");
+        }
+
+        nameDiv.textContent = student.name;
+        metaDiv.textContent = student.gender
+          ? `${row}줄 ${col}칸 · ${student.gender}`
+          : `${row}줄 ${col}칸`;
+
+        if (student.fixed) {
+          badgeDiv.appendChild(createBadge("자리고정", "badge-fixed"));
+        }
+
+        if (student.fixedPair) {
+          badgeDiv.appendChild(createBadge("짝고정", "badge-pair"));
+        }
+
+        if (distanceNames.has(student.name)) {
+          badgeDiv.appendChild(createBadge("거리두기", "badge-distance"));
+        }
       }
 
-      seat.innerHTML = `
-        <div class="seat-name">${escapeHTML(student.name)}</div>
-        <div class="seat-meta">${row}줄 ${col}칸${student.gender ? " · " + student.gender : ""}</div>
-      `;
+      seat.appendChild(nameDiv);
+      seat.appendChild(metaDiv);
+
+      if (badgeDiv.children.length > 0) {
+        seat.appendChild(badgeDiv);
+      }
+
+      seatMap.appendChild(seat);
+    });
+  }
+
+  function createBadge(text, className) {
+    const badge = document.createElement("span");
+    badge.className = `seat-badge ${className}`;
+    badge.textContent = text;
+    return badge;
+  }
+
+  function renderResultInfo(studentCount) {
+    const title = classTitleInput.value.trim();
+
+    resultTitle.textContent = title ? `${title} 자리 배치표` : "자리 배치 결과";
+    studentCountInfo.textContent = `${studentCount}명`;
+
+    const today = new Date();
+    const nextChange = new Date(today);
+    nextChange.setDate(today.getDate() + 14);
+
+    dateInfo.textContent = `생성일: ${formatDate(today)} / 다음 자리 변경 권장일: ${formatDate(nextChange)}`;
+  }
+
+  function renderWarnings(warnings) {
+    warningBox.innerHTML = "";
+
+    if (warnings.length === 0) {
+      warningBox.classList.add("hidden");
+      return;
     }
 
-    seatMap.appendChild(seat);
-  });
-}
+    warningBox.classList.remove("hidden");
 
-function renderResultInfo(studentCount) {
-  const title = classTitleInput.value.trim();
+    const strong = document.createElement("strong");
+    strong.textContent = "확인 필요";
 
-  resultTitle.textContent = title ? `${title} 자리 배치표` : "자리 배치 결과";
-  studentCountInfo.textContent = `${studentCount}명`;
+    const ul = document.createElement("ul");
 
-  const today = new Date();
-  const nextChange = new Date(today);
-  nextChange.setDate(today.getDate() + 14);
+    warnings.forEach(function (warning) {
+      const li = document.createElement("li");
+      li.textContent = warning;
+      ul.appendChild(li);
+    });
 
-  dateInfo.textContent = `생성일: ${formatDate(today)} / 다음 자리 변경 권장일: ${formatDate(nextChange)}`;
-}
-
-function renderWarnings(warnings) {
-  if (warnings.length === 0) {
-    warningBox.classList.add("hidden");
-    warningBox.innerHTML = "";
-    return;
+    warningBox.appendChild(strong);
+    warningBox.appendChild(ul);
   }
 
-  warningBox.classList.remove("hidden");
-  warningBox.innerHTML = `
-    <strong>확인 필요</strong>
-    <ul>
-      ${warnings.map(item => `<li>${escapeHTML(item)}</li>`).join("")}
-    </ul>
-  `;
-}
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const randomIndex = Math.floor(Math.random() * (i + 1));
+      const temp = array[i];
+      array[i] = array[randomIndex];
+      array[randomIndex] = temp;
+    }
 
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const randomIndex = Math.floor(Math.random() * (i + 1));
-    [array[i], array[randomIndex]] = [array[randomIndex], array[i]];
+    return array;
   }
 
-  return array;
-}
+  function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}. ${month}. ${day}.`;
-}
-
-function escapeHTML(text) {
-  return String(text)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function saveData() {
-  const data = {
-    classTitle: classTitleInput.value,
-    rowCount: rowCountInput.value,
-    colCount: colCountInput.value,
-    studentInput: studentInput.value,
-    genderPairMode: genderPairModeInput.checked,
-    fixedSeats,
-    fixedPairInput: fixedPairInput.value
-  };
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-function loadSavedData() {
-  const rawData = localStorage.getItem(STORAGE_KEY);
-
-  if (!rawData) return;
-
-  try {
-    const data = JSON.parse(rawData);
-
-    classTitleInput.value = data.classTitle || "";
-    rowCountInput.value = data.rowCount || 6;
-    colCountInput.value = data.colCount || 6;
-    studentInput.value = data.studentInput || "";
-    genderPairModeInput.checked = data.genderPairMode ?? true;
-    fixedSeats = data.fixedSeats || [];
-    fixedPairInput.value = data.fixedPairInput || "";
-  } catch (error) {
-    console.error("저장된 데이터를 불러오지 못했습니다.", error);
+    return `${year}. ${month}. ${day}.`;
   }
-}
+
+  function saveData() {
+    const data = {
+      classTitle: classTitleInput.value,
+      rowCount: rowCountInput.value,
+      colCount: colCountInput.value,
+      studentInput: studentInput.value,
+      genderPairMode: genderPairModeInput.checked,
+      fixedSeats: fixedSeats,
+      fixedPairInput: fixedPairInput.value,
+      distancePairInput: distancePairInput.value,
+      currentViewMode: currentViewMode
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function loadSavedData() {
+    const rawData = localStorage.getItem(STORAGE_KEY);
+
+    if (!rawData) return;
+
+    try {
+      const data = JSON.parse(rawData);
+
+      classTitleInput.value = data.classTitle || "";
+      rowCountInput.value = data.rowCount || 6;
+      colCountInput.value = data.colCount || 6;
+      studentInput.value = data.studentInput || "";
+      genderPairModeInput.checked = data.genderPairMode !== false;
+      fixedSeats = data.fixedSeats || [];
+      fixedPairInput.value = data.fixedPairInput || "";
+      distancePairInput.value = data.distancePairInput || "";
+      currentViewMode = data.currentViewMode || "teacher";
+    } catch (error) {
+      console.log("저장된 데이터를 불러오지 못했습니다.", error);
+    }
+  }
+});
 ```
