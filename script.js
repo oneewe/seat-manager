@@ -1,3 +1,5 @@
+```javascript
+// script.js
 const classTitleInput = document.getElementById("classTitle");
 const rowCountInput = document.getElementById("rowCount");
 const colCountInput = document.getElementById("colCount");
@@ -28,7 +30,7 @@ const warningBox = document.getElementById("warningBox");
 
 let fixedSeats = [];
 
-const STORAGE_KEY = "middleSchoolEnglishSeatMaker";
+const STORAGE_KEY = "randomSeatManagerData";
 
 document.addEventListener("DOMContentLoaded", () => {
   loadSavedData();
@@ -79,9 +81,7 @@ addFixedSeatBtn.addEventListener("click", () => {
   saveData();
 });
 
-generateBtn.addEventListener("click", () => {
-  generateSeats();
-});
+generateBtn.addEventListener("click", generateSeats);
 
 saveBtn.addEventListener("click", () => {
   saveData();
@@ -120,6 +120,7 @@ sampleBtn.addEventListener("click", () => {
 박은우,남
 최서아,여
 이현준,남`;
+
   updateFixedStudentSelect();
   saveData();
 });
@@ -129,6 +130,7 @@ clearBtn.addEventListener("click", () => {
   if (!ok) return;
 
   localStorage.removeItem(STORAGE_KEY);
+
   classTitleInput.value = "";
   rowCountInput.value = 6;
   colCountInput.value = 6;
@@ -136,12 +138,14 @@ clearBtn.addEventListener("click", () => {
   fixedPairInput.value = "";
   genderPairModeInput.checked = true;
   fixedSeats = [];
+
   seatMap.innerHTML = "";
   resultTitle.textContent = "자리 배치 결과";
   dateInfo.textContent = "자리표를 생성하면 날짜가 표시됩니다.";
   studentCountInfo.textContent = "0명";
   warningBox.classList.add("hidden");
   warningBox.innerHTML = "";
+
   updateFixedStudentSelect();
   renderFixedSeatList();
 });
@@ -233,7 +237,7 @@ function renderFixedSeatList() {
     const tag = document.createElement("span");
     tag.className = "tag";
     tag.innerHTML = `
-      ${item.studentName} → ${item.row}줄 ${item.col}칸
+      ${escapeHTML(item.studentName)} → ${item.row}줄 ${item.col}칸
       <button type="button" aria-label="삭제">×</button>
     `;
 
@@ -332,9 +336,9 @@ function generateSeats() {
   }
 
   const fixedPairs = parseFixedPairs();
+
   placeFixedPairs({
     fixedPairs,
-    students,
     studentMap,
     seats,
     rowCount,
@@ -407,6 +411,7 @@ function placeFixedPairs({
 
     if (indexA !== -1 && indexB === -1) {
       const nearSeat = findEmptyAdjacentSeat(indexA, seats, rowCount, colCount);
+
       if (nearSeat === -1) {
         warnings.push(`"${nameA}" 주변에 빈자리가 없어 "${nameB}"을 짝꿍으로 고정하지 못했습니다.`);
         continue;
@@ -416,6 +421,7 @@ function placeFixedPairs({
         ...studentMap.get(nameB),
         fixedPair: true
       };
+
       assignedNames.add(nameA);
       assignedNames.add(nameB);
       continue;
@@ -423,6 +429,7 @@ function placeFixedPairs({
 
     if (indexA === -1 && indexB !== -1) {
       const nearSeat = findEmptyAdjacentSeat(indexB, seats, rowCount, colCount);
+
       if (nearSeat === -1) {
         warnings.push(`"${nameB}" 주변에 빈자리가 없어 "${nameA}"을 짝꿍으로 고정하지 못했습니다.`);
         continue;
@@ -432,6 +439,7 @@ function placeFixedPairs({
         ...studentMap.get(nameA),
         fixedPair: true
       };
+
       assignedNames.add(nameA);
       assignedNames.add(nameB);
       continue;
@@ -451,6 +459,7 @@ function placeFixedPairs({
 
     seats[pairSlot[0]] = pair[0];
     seats[pairSlot[1]] = pair[1];
+
     assignedNames.add(nameA);
     assignedNames.add(nameB);
   }
@@ -592,7 +601,7 @@ function renderSeats(seats, rowCount, colCount) {
 
       seat.innerHTML = `
         <div class="seat-name">${escapeHTML(student.name)}</div>
-        <div class="seat-meta">${row}줄 ${col}칸 ${student.gender ? " · " + student.gender : ""}</div>
+        <div class="seat-meta">${row}줄 ${col}칸${student.gender ? " · " + student.gender : ""}</div>
       `;
     }
 
@@ -688,3 +697,4 @@ function loadSavedData() {
     console.error("저장된 데이터를 불러오지 못했습니다.", error);
   }
 }
+```
