@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>랜덤 자리 배치표</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <div>
+        <h1>랜덤 자리 배치표</h1>
+        <p>중학교 영어 수업용 2주 단위 자리 바꾸기 도구</p>
+      </div>
+      <button id="printBtn" class="sub-btn">인쇄하기</button>
+    </header>
+
+    <main class="layout">
+      <section class="panel no-print">
+        <h2>기본 설정</h2>
+
+        <div class="form-row">
+          <label>
+            학급 / 수업명
+            <input id="classTitle" type="text" placeholder="예: 2학년 3반 영어" />
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>
+            줄 수
+            <input id="rowCount" type="number" min="1" max="12" value="6" />
+          </label>
+
+          <label>
+            칸 수
+            <input id="colCount" type="number" min="1" max="12" value="6" />
+          </label>
+        </div>
+
+        <label>
+          학생 명단
+          <textarea id="studentInput" rows="12" placeholder="예:
+김하늘,여
+박도윤,남
+이서연,여
+최민준,남"></textarea>
+        </label>
+
+        <p class="hint">
+          성별은 남/여, 남자/여자, M/F 모두 입력 가능합니다.
+          성별을 비워두면 일반 랜덤 배치됩니다.
+        </p>
+
+        <div class="option-box">
+          <label class="check-label">
+            <input id="genderPairMode" type="checkbox" checked />
+            남녀 짝꿍을 우선으로 배치하기
+          </label>
+        </div>
+
+        <div class="button-group">
+          <button id="generateBtn">자리 배치하기</button>
+          <button id="saveBtn" class="sub-btn">명단 저장</button>
+          <button id="sampleBtn" class="sub-btn">예시 불러오기</button>
+          <button id="clearBtn" class="danger-btn">초기화</button>
+        </div>
+
+        <button id="toggleSecretBtn" class="secret-toggle">
+          교사용 고급 설정 열기
+        </button>
+
+        <div id="secretPanel" class="secret-panel hidden">
+          <h2>교사용 고급 설정</h2>
+          <p class="hint">
+            이 영역은 화면에서 접어두면 학생들에게 보이지 않습니다.
+            실제 보안 잠금 기능은 아니므로 수업 중에는 접어두고 사용하세요.
+          </p>
+
+          <h3>1. 특정 학생 자리 고정</h3>
+
+          <div class="grid-3">
+            <label>
+              학생
+              <select id="fixedStudentSelect"></select>
+            </label>
+
+            <label>
+              줄
+              <input id="fixedRow" type="number" min="1" value="1" />
+            </label>
+
+            <label>
+              칸
+              <input id="fixedCol" type="number" min="1" value="1" />
+            </label>
+          </div>
+
+          <button id="addFixedSeatBtn" class="sub-btn">고정 자리 추가</button>
+
+          <div id="fixedSeatList" class="tag-list"></div>
+
+          <h3>2. 짝꿍 고정</h3>
+          <label>
+            고정할 짝꿍
+            <textarea id="fixedPairInput" rows="5" placeholder="예:
+김하늘, 박도윤
+이서연 - 최민준"></textarea>
+          </label>
+
+          <p class="hint">
+            한 줄에 한 쌍씩 입력하세요. 쉼표(,) 또는 하이픈(-)으로 구분할 수 있습니다.
+          </p>
+        </div>
+      </section>
+
+      <section class="result-area">
+        <div class="result-header">
+          <div>
+            <h2 id="resultTitle">자리 배치 결과</h2>
+            <p id="dateInfo">자리표를 생성하면 날짜가 표시됩니다.</p>
+          </div>
+          <div id="studentCountInfo" class="count-badge">0명</div>
+        </div>
+
+        <div class="front-board">칠판 / 교탁</div>
+
+        <div id="seatMap" class="seat-map"></div>
+
+        <div id="warningBox" class="warning-box hidden"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
